@@ -2,9 +2,9 @@
 
 set includes=/I dependencies\Glad\include /I dependencies\GLFW\include /I src /I dependencies\stb\include /I dependencies\tiny\include /I dependencies\OpenFBX\include
 set libs=dependencies\GLFW\lib\glfw3.lib dependencies\Glad\lib\glad.lib Shell32.lib User32.lib Gdi32.lib OpenGL32.lib msvcrt.lib
-set compile_flags=
-set link_flags=/NODEFAULTLIB:LIBCMT /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup
-set flags=/Ox /EHsc
+set compile_flags=/DDEBUG
+set link_flags=/DEBUG /NODEFAULTLIB:LIBCMT
+set flags=/Zi /EHsc
 
 rem Libraries
 cl %flags% /c dependencies\stb\src\*.cpp  /I dependencies\stb\include
@@ -26,7 +26,7 @@ rem Resources
 rc resources.rc
 
 rem Link and Make Executable
-link *.obj *.res %libs% /OUT:solar-system.exe %link_flags%
+link *.obj *.res %libs% /OUT:solar-system-debug.exe %link_flags%
 
 rem Delete Intermediate Files
 del *.obj

@@ -1,3 +1,3 @@
 @echo off
 
-cls && build && solar-system
+cls && debug && solar-system-debug

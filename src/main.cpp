@@ -28,6 +28,10 @@ Shader sunShader,
 const Vec3 cameraOffset { 0.0f, 0.0f, 0.1f };
 Vec3 cameraPos { 0.0f, 200.0f, 0.0f };
 
+#ifdef DEBUG
+bool showStats = false;
+#endif
+
 int main()
 {
     Application app("Solar System", 1920, 1080, true, false);
@@ -75,6 +79,13 @@ int main()
             app->Exit();
             return;
         }
+
+#       ifdef DEBUG
+        if (app->GetKeyDown(KEY(GRAVE_ACCENT)))
+        {
+            showStats = !showStats;
+        }
+#       endif
 
         if (app->GetKeyDown(KEY(E)) ||
             app->GetKeyDown(KEY(RIGHT)))
@@ -294,6 +305,41 @@ int main()
 
             selectedPlanet = newSelection;
         }
+
+#       ifdef DEBUG
+        {   // Frame count
+            static u64 frameCount = 0;
+            static f64 prevTick = app->time;
+            static f64 frameTime = app->deltaTime;
+
+            static char buffer[64];
+
+            if (showStats)
+            {
+                if (app->time - prevTick >= 1.0)
+                {
+                    frameTime = (app->time - prevTick) / (f64) frameCount;
+                    frameCount = 0;
+                    prevTick = app->time;
+                }
+
+                sprintf(buffer, "Frame Time: %f\nFPS: %.0f\nSelected Index: %d",
+                        frameTime, 1.0 / frameTime, selectedPlanet);
+            }
+            else
+                sprintf(buffer, "Press ` to show stats");
+
+            std::string text = buffer;
+            Vec2 size = UI::GetRenderedTextSize(text, font);
+            Vec2 topLeft;
+            topLeft.x = app->refScreenWidth - size.x - 10.0f;
+            topLeft.y = app->refScreenHeight - size.y - 10.0f;
+            UI::RenderText(app, buffer, font, { 0.75f, 0.75f, 0.75f, 0.75f },
+                           topLeft, 0.0f);
+
+            frameCount++;
+        }
+#       endif
 
         UI::End();
     };
