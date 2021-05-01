@@ -1,6 +1,6 @@
 #pragma once
 
-#include "planet.h"
+#include "simulation/planet.h"
 
 PlanetData planets[] = {
     PlanetData {

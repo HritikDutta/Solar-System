@@ -1,12 +1,16 @@
-#version 330 core
+#version 460 core
 
 in vec3 v_normal;
 in vec3 v_fragPos;
 in vec2 v_texCoord;
 
+layout (std140, binding = 0) uniform Camera
+{
+    mat4 u_vp;
+};
+
 uniform vec3 u_sunToEarthVector;
 uniform mat4 u_model;
-uniform mat4 u_vp;
 uniform sampler2D u_dayTex;
 uniform sampler2D u_nightTex;
 

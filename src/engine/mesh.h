@@ -11,6 +11,7 @@ struct Mesh
 
     void LoadFromOBJ(const char* meshpath);
 
+    void Bind();
     void Draw();
     void Free();
 };

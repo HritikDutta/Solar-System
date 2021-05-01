@@ -119,11 +119,14 @@ void Mesh::LoadFromOBJ(const char* meshpath)
     meshIndexCount = meshIndices.size();
 }
 
-void Mesh::Draw()
+void Mesh::Bind()
 {
     glBindVertexArray(VAO);
-
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshIBO);
+}
+
+void Mesh::Draw()
+{
     glDrawElements(GL_TRIANGLES, meshIndexCount, GL_UNSIGNED_INT, NULL);
 }
 
