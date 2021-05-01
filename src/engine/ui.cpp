@@ -68,7 +68,6 @@ void Font::Load(const char filepath[], f32 height)
     stbtt_BakeFontBitmap(contents.data(), 0, height, bitmap, 512, 512, ' ', 128 - ' ', charData);
 
     glGenTextures(1, &bitmapTexID);
-    glActiveTexture(GL_TEXTURE8);
     glBindTexture(GL_TEXTURE_2D, bitmapTexID);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 512, 512, 0, GL_RED, GL_UNSIGNED_BYTE, bitmap);
 
@@ -176,7 +175,8 @@ void RenderText(Application* app, const std::string& text, const Font& font,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     uiData.fontShader.Bind();
-    uiData.fontShader.SetUniform1i("u_font",  8);
+    glActiveTexture(GL_TEXTURE0);
+    uiData.fontShader.SetUniform1i("u_font",  0);
     uiData.fontShader.SetUniform4f("u_color", color.r, color.g, color.b, color.a);
     uiData.fontShader.SetUniform1f("u_layer", layer);
 

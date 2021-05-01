@@ -4,7 +4,7 @@
 #include "universal/types.h"
 #include "platform/application.h"
 
-#define MAX_CHILDREN 4
+#define MAX_CHILDREN 10
 
 // I know all of them are not planets but I'm too lazy to go
 // change every planet to celestialBody everywhere :P
@@ -25,7 +25,6 @@ struct PlanetData
     f32 orbitalRadius;
 
     // For simulation
-    f32 spinSpeed;
     f32 orbitRadius;
     f32 orbitSpeed;
     

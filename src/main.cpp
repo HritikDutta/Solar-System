@@ -8,6 +8,7 @@
 #include "engine/ui.h"
 #include "engine/mesh.h"
 #include "engine/texture.h"
+#include "engine/sprite.h"
 #include "engine/uniform_buffer.h"
 #include "simulation/planet.h"
 #include "data/planet_data.h"
@@ -18,18 +19,19 @@ Vec4 white { 1.0f, 1.0f, 1.0f, 1.0f };
 s32 selectedPlanet = 0;
 
 Texture texs[sizeof(planets) / sizeof(PlanetData) + 2];     // Including earth_night and sky
+SpriteAtlas saturnRingAtlas;
+Sprite saturnRingsSprite;
+
 Mesh sphere;
 Mat4 v, p;
 
 Shader sunShader,
        planetShader,
-       earthShader;
+       earthShader,
+       spriteShader;
 
-u32 viewProjId;
-UniformBuffer<Mat4> vpUniformBuffer;
-
-const Vec3 cameraOffset { 0.0f, 0.0f, 0.1f };
 Vec3 cameraPos { 0.0f, 200.0f, 0.0f };
+UniformBuffer<Mat4> vpUniformBuffer;
 
 #ifdef DEBUG
 bool showStats = false;
@@ -37,21 +39,26 @@ bool showStats = false;
 
 int main()
 {
+#   ifdef DEBUG
+    Application app("Solar System", 1280, 720, false, true);
+    app.SetReferenceResolution(1080);
+#   else
     Application app("Solar System", 1920, 1080, true, false);
+#   endif
     app.SetWindowIcon("res/icons/solar-system-icon.png");
     app.SetVsync(true);
 
     app.onInit = [](Application* app)
     {
+        saturnRingAtlas.Load("res/images/saturn_ring.png");
+        saturnRingsSprite.Set({ 1.0f, 1.0f }, { 0.0f, 0.0f, 1.0f, 1.0f });
+
         for (int i = 0; i < sizeof(texs) / sizeof(Texture); i++)
-        {
             texs[i].Load(texture_files[i]);
-            texs[i].Bind(i + 1);
-        }
 
         font.Load("res/fonts/Inconsolata.ttf", 25.0f);
         sphere.LoadFromOBJ("res/models/sphere.obj");
-
+        
         sunShader.LoadShader("res/shaders/sun.vert", Shader::Type::VERTEX_SHADER);
         sunShader.LoadShader("res/shaders/sun.frag", Shader::Type::FRAGMENT_SHADER);
         sunShader.Compile();
@@ -64,10 +71,14 @@ int main()
         planetShader.LoadShader("res/shaders/planet.frag", Shader::Type::FRAGMENT_SHADER);
         planetShader.Compile();
 
+        spriteShader.LoadShader("res/shaders/sprite.vert", Shader::Type::VERTEX_SHADER);
+        spriteShader.LoadShader("res/shaders/sprite.frag", Shader::Type::FRAGMENT_SHADER);
+        spriteShader.Compile();
+
         p = Mat4::Perspective(
             45.0f,
             (f32) app->screenWidth / (f32) app->screenHeight,
-            1.0f, 1000.0f
+            1.0f, 4400.0f
         );
 
         vpUniformBuffer = UniformBuffer<Mat4>(0);
@@ -136,16 +147,18 @@ int main()
                 glCullFace(GL_FRONT);
                 glDisable(GL_DEPTH_TEST);
 
-                Vec3 scale = Vec3 { 200.0f, 200.0f, 200.0f };
+                Vec3 scale = Vec3 { 10.0f, 10.0f, 10.0f };
                 Mat4 m = Mat4::Scaling(scale).Translate(cameraPos);
                 sunShader.SetUniformMat4("u_mvp", false, viewProj * m);
                 
-                sunShader.SetUniform1i("u_tex", 7);
+                texs[(sizeof(texs) / sizeof(Texture)) - 1].Bind(0);
+                sunShader.SetUniform1i("u_tex", 0);
                 sphere.Draw();
 
                 glEnable(GL_DEPTH_TEST);
                 glCullFace(GL_BACK);
             }
+
 
             {   // Sun
                 PlanetData& sun = planets[0];
@@ -156,6 +169,7 @@ int main()
                 Mat4 m = Mat4::Scaling(scale).Rotate({ 0.0f, 1.0f, 0.0f }, app->time * rotationalSpeed).Rotate({ 0.0f, 0.0f, 1.0f }, ToRad(-sun.axialTilt));
                 sunShader.SetUniformMat4("u_mvp", false, viewProj * m);
 
+                texs[0].Bind(0);
                 sunShader.SetUniform1i("u_tex", 0);
 
                 sphere.Draw();
@@ -165,8 +179,10 @@ int main()
                 PlanetData& earth = planets[3];
                 earthShader.Bind();
 
-                earthShader.SetUniform1i("u_dayTex", 3);
-                earthShader.SetUniform1i("u_nightTex", 6);
+                texs[3].Bind(0);
+                earthShader.SetUniform1i("u_dayTex", 0);
+                texs[(sizeof(texs) / sizeof(Texture)) - 2].Bind(1);
+                earthShader.SetUniform1i("u_nightTex", 1);
 
                 Vec3 scale = Vec3 { 1.0f, 1.0f, 1.0f } * earth.radius;
                 f32 rotationalSpeed = 1.0f / earth.rotationalPeriod;
@@ -194,12 +210,30 @@ int main()
                     Mat4 m = Mat4::Scaling(scale).Rotate({ 0.0f, 1.0f, 0.0f }, app->time * rotationalSpeed).Rotate({ 0.0f, 0.0f, 1.0f }, ToRad(-planet.axialTilt)).Translate(planet.position);
                     planetShader.SetUniformMat4("u_model", false, m);
 
-                    planetShader.SetUniform1i("u_tex", i);
+                    texs[i].Bind(0);
+                    planetShader.SetUniform1i("u_tex", 0);
 
                     planetShader.SetUniform3f("u_lightPos", planets[0].position.x, planets[0].position.y, planets[0].position.z);
 
                     sphere.Draw();
                 }
+            }
+            
+            {   // Saturn's Rings
+                glDisable(GL_CULL_FACE);
+
+                spriteShader.Bind();
+
+                PlanetData& saturn = planets[7];
+                Mat4 m = Mat4::Scaling( Vec3 { 1.0f, 1.0f, 1.0f } * (saturn.radius * 5.0f)).Rotate({ 0.0f, 1.0f, 0.0f }, _PI / 2.0f).Rotate({ 0.0f, 0.0f, 1.0f }, -_PI / 2.0f + ToRad(-saturn.axialTilt)).Translate(saturn.position);
+                spriteShader.SetUniformMat4("u_mat", false, viewProj * m);
+
+                saturnRingAtlas.Bind(0);
+                spriteShader.SetUniform1i("u_atlas", 0);
+
+                saturnRingsSprite.Draw();
+
+                glEnable(GL_CULL_FACE);
             }
         }
 
